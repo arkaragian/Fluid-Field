@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>JavaScript Particle System</title>
+    <script src="vector.js"></script>
+    <script src="particle.js"></script>
+    <script src="utils.js"></script>
+    <script src="field.js"></script>
+    <script src="vortex.js"></script>
+    <script src="stream.js"></script>
+    
+    <script>        
+        function stop(event){
+            console.log("Keycode = "+event.keyCode);
+            if(event.keyCode == 27){
+                stopFlag = true
+                alert("Esc Key pressed")
+            }
+        }
+        function mouse(event){
+            console.log("X = "+event.pageX+" Y = "+event.pageY);
+            var xpos = document.getElementsByName("xpos")
+            xpos.item(0).value = event.pageX
+            
+            var ypos = document.getElementsByName("ypos")
+            ypos.item(0).value = event.pageY
+            
+            var stren = document.getElementsByName("stre")
+            stren.item(0).value = 100
+            
+        }
+        function setup_canvas(canvas){
+            //Scale canvas
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+    </script>
+  <style>
+    body,html {
+      margin:0;
+      padding:0;
+    }
+    canvas {
+      background-color: black;
+    }
+    form{
+        background-color: black;
+        border: 2px red solid;
+        padding: 5px;
+        color: white;
+        position: absolute;
+        top: 0;
+        right: 0;
+    }
+    
+  </style>
+</head>
+<body>
+<canvas id="canvas" ></canvas>
+<form name="form">
+    <input type="number" name="xpos" size="20" placeholder="X Position"><br>
+    <input type="number" name="ypos" size="20" placeholder="Y Position"><br>
+    <input type="number" name="stre" size="20" placeholder="Strength"> <br>
+    <input type="radio" name="sex" value="male" checked>Source/Sink<br>
+    <input type="radio" name="sex" value="male">Stream<br>
+    <input type="radio" name="sex" value="female">Vortex
+</form>
+<script>
+    window.addEventListener("keydown", stop , true)
+    //Get canvas
+    canvas = document.getElementById("canvas");
+    canvas.addEventListener("mousedown", mouse, true);
+    context = canvas.getContext("2d")
+    setup_canvas(canvas);
+    
+    particles = particle_column(10,200)
+    
+    
+    fields = new Array()    
+    f= new Stream(10,0);
+    fields.push(f)
+    f= new Field(400,window.innerHeight/2,-300);
+    fields.push(f)
+    f= new Field(800,window.innerHeight/2,600);
+    fields.push(f)
+    
+    sinks = get_sinks(fields)
+    
+    start_animation(particles,fields,context)    
+    
+    
+</script>
+</body>
+</html>
