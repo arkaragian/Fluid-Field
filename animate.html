@@ -1,94 +1,163 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <title>JavaScript Particle System</title>
-    <script src="vector.js"></script>
-    <script src="particle.js"></script>
-    <script src="utils.js"></script>
-    <script src="field.js"></script>
-    <script src="vortex.js"></script>
-    <script src="stream.js"></script>
-    
-    <script>        
-        function stop(event){
-            console.log("Keycode = "+event.keyCode);
-            if(event.keyCode == 27){
-                stopFlag = true
-                alert("Esc Key pressed")
-            }
-        }
-        function mouse(event){
-            console.log("X = "+event.pageX+" Y = "+event.pageY);
-            var xpos = document.getElementsByName("xpos")
-            xpos.item(0).value = event.pageX
-            
-            var ypos = document.getElementsByName("ypos")
-            ypos.item(0).value = event.pageY
-            
-            var stren = document.getElementsByName("stre")
-            stren.item(0).value = 100
-            
-        }
-        function setup_canvas(canvas){
-            //Scale canvas
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        }
-    </script>
+  <script src="vector.js"></script>
+  <script src="particle.js"></script>
+  <script src="utils.js"></script>
+  <script src="field.js"></script>
+  <script src="vortex.js"></script>
+  <script src="stream.js"></script>
+
   <style>
-    body,html {
-      margin:0;
-      padding:0;
+    body,
+    html {
+      margin: 0;
+      padding: 0;
     }
+
     canvas {
       background-color: black;
     }
-    form{
-        background-color: black;
-        border: 2px red solid;
-        padding: 5px;
-        color: white;
-        position: absolute;
-        top: 0;
-        right: 0;
+
+    form {
+      background-color: black;
+      border: 2px red solid;
+      padding: 5px;
+      color: white;
+      position: absolute;
+      top: 0;
+      right: 0;
     }
-    
   </style>
 </head>
+
 <body>
-<canvas id="canvas" ></canvas>
-<form name="form">
+  <canvas id="canvas"></canvas>
+  <form name="form">
     <input type="number" name="xpos" size="20" placeholder="X Position"><br>
     <input type="number" name="ypos" size="20" placeholder="Y Position"><br>
     <input type="number" name="stre" size="20" placeholder="Strength"> <br>
-    <input type="radio" name="sex" value="male" checked>Source/Sink<br>
-    <input type="radio" name="sex" value="male">Stream<br>
-    <input type="radio" name="sex" value="female">Vortex
-</form>
-<script>
-    window.addEventListener("keydown", stop , true)
+    <input type="radio" name="sex" id="SourceSink" value="male" checked>Source/Sink<br>
+    <input type="radio" name="sex" id="Stream" value="male">Stream<br>
+    <input type="radio" name="sex" id="Vortex" value="female">Vortex<br>
+    <button name="addBtn" value="Add" onclick="addInfluence()">Add</button>
+  </form>
+  <script>
+
+    console.log("Initialising Simulation");
+
+    var theFields = sessionStorage.getItem("fieldsList");
+
+    if (theFields === null) {
+      fields = new Array();
+      canvas = null;
+      context = null;
+
+      f = new Stream(10, 0);
+      fields.push(f)
+      f = new Field(400, window.innerHeight / 2, -300);
+      fields.push(f)
+      f = new Field(800, window.innerHeight / 2, 600);
+      fields.push(f)
+
+      var fieldsList = JSON.stringify(fields);
+      window.sessionStorage.setItem("fieldsList", fieldsList);
+
+      particles = particle_column(10, 200);
+      window.sessionStorage.setItem("particles", JSON.stringify(particles));
+    } else{
+      fieldsStr = JSON.parse(sessionStorage.getItem("fieldsList"));
+      fields = new Array();
+      for(i=0; i<fieldsStr.length; i++){
+        //Convert to fields
+        if(fieldsStr[i].ux === undefined){
+          //Create field
+          f = new Field(fieldsStr[i].x, fieldsStr[i].y, fieldsStr[i].strength);
+        } else{
+          //Create stream
+          f = new Stream(fieldsStr[i].ux,fieldsStr[i].uy);
+        }
+        fields.push(f);
+      }
+      particlesStr = JSON.parse(sessionStorage.getItem("particles"));
+      particles = new Array();
+      for(i=0; i<particlesStr.length; i++){
+        //Convert to particles
+        p = new Particle(particlesStr[i].x,particlesStr[i].y);
+        particles.push(p);
+      }
+
+    }
+
+    window.addEventListener("keydown", stop, true)
     //Get canvas
     canvas = document.getElementById("canvas");
     canvas.addEventListener("mousedown", mouse, true);
     context = canvas.getContext("2d")
     setup_canvas(canvas);
-    
-    particles = particle_column(10,200)
-    
-    
-    fields = new Array()    
-    f= new Stream(10,0);
-    fields.push(f)
-    f= new Field(400,window.innerHeight/2,-300);
-    fields.push(f)
-    f= new Field(800,window.innerHeight/2,600);
-    fields.push(f)
-    
-    sinks = get_sinks(fields)
-    
-    start_animation(particles,fields,context)    
-    
-    
-</script>
+
+
+
+    function stop(event) {
+      console.log("Keycode = " + event.keyCode);
+      if (event.keyCode == 27) {
+        stopFlag = true
+        alert("Esc Key pressed")
+      }
+    }
+    function mouse(event) {
+      console.log("X = " + event.pageX + " Y = " + event.pageY);
+
+      const rect = canvas.getBoundingClientRect();
+
+      var xpos = document.getElementsByName("xpos")
+      xpos.item(0).value = event.pageX
+
+      var ypos = document.getElementsByName("ypos")
+      ypos.item(0).value = event.pageY
+
+      var stren = document.getElementsByName("stre")
+      stren.item(0).value = 100
+
+    }
+    function setup_canvas(canvas) {
+      //Scale canvas
+      canvas.width = window.innerWidth-20;
+      canvas.height = window.innerHeight -20;
+    }
+    function addInfluence() {
+      var xpos_field = document.getElementsByName("xpos")
+      var xpos_val = parseInt(xpos_field.item(0).value);
+      var ypos_field = document.getElementsByName("ypos")
+      var ypos_val = parseInt(ypos_field.item(0).value);
+
+      var stren_field = document.getElementsByName("stre")
+      var stren_value = parseInt(stren_field.item(0).value);
+
+      var theFields = sessionStorage.getItem("fieldsList");
+      var fields = JSON.parse(theFields);
+
+      if (document.getElementById('SourceSink').checked) {
+        f = new Field(xpos_val, ypos_val, stren_value);
+        fields.push(f);
+        //f.draw(context)
+      } else if (document.getElementById('Stream').checked) {
+        //Female radio button is checked
+      } else if (document.getElementById('Vortex').checked) {
+        //Add vortex
+        f = new Vortex(xpos_val, ypos_val, stren_value);
+        this.fields.push(f);
+        //f.draw(context);
+      }
+      window.sessionStorage.setItem("fieldsList", JSON.stringify(fields));
+      //context.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+
+    start_animation(particles, fields, context);
+  </script>
 </body>
+
 </html>
